@@ -2,6 +2,20 @@
 library(dplyr)
 library(tidyverse)
 
+filename <- "Coursera_DS3_Final.zip"
+   
+   # Checking if archieve already exists.
+   if (!file.exists(filename)){
+        fileURL <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+        download.file(fileURL, filename, method="curl")
+   }  
+   
+   # Checking if folder exists
+   if (!file.exists("UCI HAR Dataset")) { 
+        unzip(filename) 
+   }
+   
+
 ## 1. Merge training & test sets ----
 ### 1.1 Read training sets ----
 x_train <- read.table("./UCI HAR Dataset/train/X_train.txt")
@@ -35,10 +49,22 @@ dat <- rbind(train, test)
 
 ## 2. Extracts mean and sd cols ----
 dat_avg_sd <- dat %>%
-     select(contains(c("mean", "std")))
+     select(subjectId, activityId, contains(c("mean", "std"))) 
+
+dat_avg_sd_name = merge(dat_avg_sd, activityLabels, by = "activityId")
+dat_avg_sd_name$activityType = as.factor(dat_avg_sd_name$activityType)
 
 ## 3/4 Done is step 1 ----
 
 ## 5. New dataset with average of each var ---
-dat_new <- dat %>%
-     
+dat_new <- dat_avg_sd_name %>%
+     group_by(subjectId, activityType) %>%
+     summarise(across(everything(), mean),.groups = 'drop')
+
+# CHECK FINAL RESULTS ----
+str(dat_new)
+
+### 5.1 Writing second tidy data set in txt file
+
+write.table(dat_new, "q5_data.txt", row.name=FALSE)
+
